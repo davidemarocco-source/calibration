@@ -639,19 +639,37 @@ def main():
     # File upload
     st.header("📁 Data Upload")
     
-    uploaded_file = st.file_uploader(
-        "Upload your response matrix (CSV or Excel)",
-        type=['csv', 'xlsx', 'xls'],
-        help="Rows = persons, Columns = items, Values = 0 (incorrect) or 1 (correct)"
-    )
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        uploaded_file = st.file_uploader(
+            "Upload your response matrix (CSV or Excel)",
+            type=['csv', 'xlsx', 'xls'],
+            help="Rows = persons, Columns = items, Values = 0 (incorrect) or 1 (correct)"
+        )
+    with col2:
+        st.write("") # Spacing
+        st.write("") # Spacing
+        has_id_col = st.checkbox("First column is Person ID", value=True, 
+                               help="Uncheck if your data doesn't have a column for person names/IDs and the first column contains item responses.")
+        has_header_row = st.checkbox("First row is Item ID", value=True,
+                               help="Uncheck if your data doesn't have a header row and the first row contains person responses.")
     
     if uploaded_file is not None:
         # Load data
         try:
+            index_col_val = 0 if has_id_col else None
+            header_val = 0 if has_header_row else None
+            
             if uploaded_file.name.endswith('.csv'):
-                data_df = pd.read_csv(uploaded_file, index_col=0)
+                data_df = pd.read_csv(uploaded_file, index_col=index_col_val, header=header_val)
             else:
-                data_df = pd.read_excel(uploaded_file, index_col=0)
+                data_df = pd.read_excel(uploaded_file, index_col=index_col_val, header=header_val)
+                
+            # Assign default names if missing
+            if not has_header_row:
+                data_df.columns = [f"Item_{i+1}" for i in range(data_df.shape[1])]
+            if not has_id_col:
+                data_df.index = [f"Person_{i+1}" for i in range(data_df.shape[0])]
             
             st.success(f"✅ Data loaded: {data_df.shape[0]} persons × {data_df.shape[1]} items")
             
